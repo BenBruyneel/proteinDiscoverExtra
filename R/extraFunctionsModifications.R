@@ -214,6 +214,9 @@ peptideContainsModification <- function(db, PeptideGroupIDs,
 #'  returns an empty peptideTableRow, if FALSE then returns the original
 #'  peptideTableRow with NA in the two extra columns (starLocation &
 #'  endLocation)
+#' @param positionsIn specifies the column to get the positions from. This can
+#'  be different depending on Proteome Discoverer settings. Can also be
+#'  'PositionsinProteins'
 #'
 #' @return a data.frame row with the same data as the argument peptideTableRow
 #'  plus the start & end position of the peptide (present)
@@ -274,6 +277,9 @@ givePositions <- function(peptideTableRow, Accession, removeNA = FALSE,
 #'  The information regarding Name/Abbreviation can be found in the
 #'  'FoundModifications' table in a pdResult file/database
 #' @param Accession accession id (Uniprot style) of the (master) protein
+#' @param positionsIn specifies the column to get the positions from. This can
+#'  be different depending on Proteome Discoverer settings. Can also be
+#'  'PositionsinProteins'
 #' @param giveTable if FALSE then the result will be a single row data.frame
 #'  with the modificationName (Abbreviation) of the modification, the location
 #'  in protein and the percentage of label (based on abundance of all peptides
@@ -345,6 +351,9 @@ calculatePositionPercentage <- function(db, peptideTable, modificationLocation,
 #'  The information regarding Name/Abbreviation can be found in the
 #'  'FoundModifications' table in a pdResult file/database
 #' @param Accession accession id (Uniprot style) of the (master) protein
+#' @param positionsIn specifies the column to get the positions from. This can
+#'  be different depending on Proteome Discoverer settings. Can also be
+#'  'PositionsinProteins'
 #'
 #' @note Essentially this function does the same as
 #'  \code{\link{calculatePositionPercentage}} but does not only calculate
@@ -402,9 +411,9 @@ getPositionPercentage <- function(positionTable,
                                   modificationLocation, modificationName){
   return(data.frame(modification = modificationName,
                     location = modificationLocation,
-                    percentage = (sum(positionTable$Abundances_1[positionTable$modificationPresent],
+percentage = (sum(positionTable$Abundances_1[positionTable$modificationPresent],
                                       na.rm = TRUE) /
-                                    sum(positionTable$Abundances_1,na.rm = TRUE)) * 100 ))
+                          sum(positionTable$Abundances_1,na.rm = TRUE)) * 100 ))
 }
 
 #' function that generates a complete 
@@ -420,18 +429,23 @@ getPositionPercentage <- function(positionTable,
 #'  \code{\link{dbGetPeptideTable}} 
 #' @param Accession accession id (Uniprot style) of the (master) protein for
 #'  which the table is to be generated
+#' @param positionsIn specifies the column to get the positions from. This can
+#'  be different depending on Proteome Discoverer settings. Can also be
+#'  'PositionsinProteins'
 #'
 #' @return data.frame of all modifications, their locations in the protein and
 #'  the percentage of each per position
 #' @export
 proteinModificationTable <- function(db, modificationTable, peptideTable,
-                                     Accession){
+                                     Accession,
+                                     positionsIn = "PositionsinMasterProteins"){
   modsperc <- map2_df(modificationTable$ModificationName,
                       modificationTable$Position,
                       ~calculatePositionPercentage(db = db,
                                                    peptideTable = peptideTable,
                                                    modificationLocation = .y,
                                                    modificationName = .x,
-                                                   Accession = Accession))
+                                                   Accession = Accession,
+                                                   positionsIn = positionsIn))
   return(modsperc)
 }
