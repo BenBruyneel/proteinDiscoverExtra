@@ -6,4 +6,4 @@ For examples, see: [proteinDiscoverExtra](https://benbruyneel.github.io/proteinD
 
 Work in Progress!
 
-May, 29th 2022
+May, 30th 2022
