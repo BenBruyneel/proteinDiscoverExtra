@@ -449,3 +449,28 @@ proteinModificationTable <- function(db, modificationTable, peptideTable,
                                                    positionsIn = positionsIn))
   return(modsperc)
 }
+
+#' @Description function around stringr::str_locate_all function to retrieve ONLY the start locations of a vector
+#'
+#' @note not vectorized, for more info on the parameters see ?stringr::str_locate_all
+#' @param string Input vector. Either a character vector, or something coercible to one
+#' @param pattern pattern to look for
+#'
+#' @return numeric vector
+#' @export
+str_locate_all_starts <- function(string, pattern){
+  return(str_locate_all(string = string, pattern = pattern)[[1]][,"start"])
+}
+
+#' @Description function around stringr::str_locate_all function to retrieve ONLY the end locations of a vector
+#'
+#' @note not vectorized, for more info on the parameters see ?stringr::str_locate_all
+#' @param string Input vector. Either a character vector, or something coercible to one
+#' @param pattern pattern to look for
+#'
+#' @return numeric vector
+#' @export
+str_locate_all_ends <- function(string, pattern){
+  return(str_locate_all(string = string, pattern = pattern)[[1]][,"end"])
+}
+
