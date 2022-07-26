@@ -19,7 +19,6 @@ giveFirst <- function(theString){
 #' @param theString a character vector with the above mentioned format
 #'
 #' @return integer number (the number after -)
-#' @export
 #' @noRd
 giveLast <- function(theString){
   posmin <- stringr::str_locate(theString,pattern = "-")[1,1]
