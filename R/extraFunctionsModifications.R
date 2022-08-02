@@ -209,6 +209,11 @@ peptideContainsModification <- function(db, PeptideGroupIDs,
 #'   specify from which one the positions need to be extracted
 #' @param Accession accession id (Uniprot style) of the (master) protein for
 #'  which the positions need to be calculated
+#' @param multipleAccession integer vector, default = NA. In case of the same
+#'  accession occurring more than once, specifies which one to use. This can
+#'  happen when multiple databases with overlapping accessions are used
+#' @param showWarning logical vector: give warning when multiple accession
+#'  occurs
 #' @param removeNA specifies what to to do when the result is NA: if TRUE
 #'  returns an empty peptideTableRow, if FALSE then returns the original
 #'  peptideTableRow with NA in the two extra columns (starLocation &
@@ -220,7 +225,9 @@ peptideContainsModification <- function(db, PeptideGroupIDs,
 #' @return a data.frame row with the same data as the argument peptideTableRow
 #'  plus the start & end position of the peptide (present)
 #' @export
-givePositions <- function(peptideTableRow, Accession, removeNA = FALSE,
+givePositions <- function(peptideTableRow, Accession,
+                          multipleAccession = NA, showWarning = FALSE,
+                          removeNA = FALSE,
                           positionsIn = "PositionsinMasterProteins"){
   # remove all [  ] characters
   #tempStr <- str_replace_all(str_replace_all(peptideTableRow$PositionsinMasterProteins, pattern = "\\[", replacement = ""), pattern = "\\]", replacement = "")
@@ -233,11 +240,20 @@ givePositions <- function(peptideTableRow, Accession, removeNA = FALSE,
   thisIsAccession <- whichStr[which(grepl(tempStr[whichStr], pattern = Accession))]
   # end of Accession
   if (!is_empty(thisIsAccession)){
+    # in case the accession exists more than one, possible with multiple database searches!
     endOfAccession <- whichStr[which(grepl(tempStr[whichStr], pattern = Accession))+1]-1
-    if (is.na(endOfAccession)){
+    if (!identical(endOfAccession, NA)){
       endOfAccession <- length(tempStr)
     }
     tempStr <- tempStr[thisIsAccession:endOfAccession]
+    if (length(tempStr)>1){
+      if (!is.na(multipleAccession)){
+        tempStr <- tempStr[multipleAccession]
+      }
+      if (showWarning){
+        warning(" Multiple identical accessions in peptide table row!")
+      }
+    }
     tempdf <- data.frame()
     for (counter in 1:length(tempStr)){
       newdf <- peptideTableRow
@@ -276,6 +292,11 @@ givePositions <- function(peptideTableRow, Accession, removeNA = FALSE,
 #'  The information regarding Name/Abbreviation can be found in the
 #'  'FoundModifications' table in a pdResult file/database
 #' @param Accession accession id (Uniprot style) of the (master) protein
+#' @param multipleAccession integer vector, default = NA. In case of the same
+#'  accession occurring more than once, specifies which one to use. This can
+#'  happen when multiple databases with overlapping accessions are used
+#' @param showWarning logical vector: give warning when multiple accession
+#'  occurs
 #' @param positionsIn specifies the column to get the positions from. This can
 #'  be different depending on Proteome Discoverer settings. Can also be
 #'  'PositionsinProteins'
@@ -291,12 +312,16 @@ givePositions <- function(peptideTableRow, Accession, removeNA = FALSE,
 #' @export
 calculatePositionPercentage <- function(db, peptideTable, modificationLocation,
                                         modificationName, Accession,
-                                      positionsIn = "PositionsinMasterProteins",
+                                        multipleAccession = NA, showWarning = FALSE,
+                                        positionsIn = "PositionsinMasterProteins",
                                         giveTable = FALSE){
   tempdf <- data.frame()
   for (counter in 1:nrow(peptideTable)){
     newdf <- givePositions(peptideTableRow = peptideTable[counter,],
-                           Accession = Accession, removeNA = TRUE,
+                           Accession = Accession,
+                           multipleAccession = multipleAccession,
+                           showWarning = showWarning,
+                           removeNA = TRUE,
                            positionsIn = positionsIn)
     tempdf <- bind_rows(tempdf, newdf)
   }
@@ -312,17 +337,17 @@ calculatePositionPercentage <- function(db, peptideTable, modificationLocation,
     for (counter in 1:nrow(exa)){
       exa$modificationPresent[counter] <- 
         peptideContainsModification(db = db,
-                                  PeptideGroupIDs = exa$PeptideGroupID[counter],
+                                    PeptideGroupIDs = exa$PeptideGroupID[counter],
                                     modificationName = modificationName,
-                            modificationPosition = exa$peptideLocation[counter])
+                                    modificationPosition = exa$peptideLocation[counter])
     }
     if (giveTable){
       return(exa)
     } else {
       return(data.frame(modification = modificationName,
                         location = modificationLocation,
-      percentage = (sum(exa$Abundances_1[exa$modificationPresent],na.rm = TRUE)/
-                                    sum(exa$Abundances_1,na.rm = TRUE)) * 100 ))
+                        percentage = (sum(exa$Abundances_1[exa$modificationPresent],na.rm = TRUE)/
+                                        sum(exa$Abundances_1,na.rm = TRUE)) * 100 ))
     }
   } else {
     if (giveTable){
@@ -350,6 +375,12 @@ calculatePositionPercentage <- function(db, peptideTable, modificationLocation,
 #'  The information regarding Name/Abbreviation can be found in the
 #'  'FoundModifications' table in a pdResult file/database
 #' @param Accession accession id (Uniprot style) of the (master) protein
+#' @param multipleAccession integer vector, default = NA. In case of the same
+#'  accession occurring more than once, specifies which one to use. This can
+#'  happen when multiple databases with overlapping accessions are used
+#' @param showWarning logical vector: give warning when multiple accession
+#'  occurs
+
 #' @param positionsIn specifies the column to get the positions from. This can
 #'  be different depending on Proteome Discoverer settings. Can also be
 #'  'PositionsinProteins'
@@ -364,11 +395,15 @@ calculatePositionPercentage <- function(db, peptideTable, modificationLocation,
 #' @export
 getPositionTable <- function(db, peptideTable, modificationLocation,
                              modificationName, Accession,
+                             multipleAccession = NA, showWarning = FALSE,
                              positionsIn = "PositionsinMasterProteins"){
   tempdf <- data.frame()
   for (counter in 1:nrow(peptideTable)){
     newdf <- givePositions(peptideTableRow = peptideTable[counter,],
-                           Accession = Accession, removeNA = TRUE,
+                           Accession = Accession,
+                           multipleAccession = multipleAccession,
+                           showWarning = showWarning,
+                           removeNA = TRUE,
                            positionsIn = positionsIn)
     tempdf <- bind_rows(tempdf, newdf)
   }
@@ -385,7 +420,7 @@ getPositionTable <- function(db, peptideTable, modificationLocation,
       peptideContainsModification(db = db,
                                   PeptideGroupIDs = exa$PeptideGroupID[counter],
                                   modificationName = modificationName,
-                            modificationPosition = exa$peptideLocation[counter])
+                                  modificationPosition = exa$peptideLocation[counter])
   }
   return(exa)
 }
@@ -410,9 +445,9 @@ getPositionPercentage <- function(positionTable,
                                   modificationLocation, modificationName){
   return(data.frame(modification = modificationName,
                     location = modificationLocation,
-percentage = (sum(positionTable$Abundances_1[positionTable$modificationPresent],
+                    percentage = (sum(positionTable$Abundances_1[positionTable$modificationPresent],
                                       na.rm = TRUE) /
-                          sum(positionTable$Abundances_1,na.rm = TRUE)) * 100 ))
+                                    sum(positionTable$Abundances_1,na.rm = TRUE)) * 100 ))
 }
 
 #' function that generates a complete 
@@ -428,6 +463,11 @@ percentage = (sum(positionTable$Abundances_1[positionTable$modificationPresent],
 #'  \code{\link{dbGetPeptideTable}} 
 #' @param Accession accession id (Uniprot style) of the (master) protein for
 #'  which the table is to be generated
+#' @param multipleAccession integer vector, default = NA. In case of the same
+#'  accession occurring more than once, specifies which one to use. This can
+#'  happen when multiple databases with overlapping accessions are used
+#' @param showWarning logical vector: give warning when multiple accession
+#'  occurs
 #' @param positionsIn specifies the column to get the positions from. This can
 #'  be different depending on Proteome Discoverer settings. Can also be
 #'  'PositionsinProteins'
@@ -437,6 +477,7 @@ percentage = (sum(positionTable$Abundances_1[positionTable$modificationPresent],
 #' @export
 proteinModificationTable <- function(db, modificationTable, peptideTable,
                                      Accession,
+                                     multipleAccession = NA, showWarning = FALSE,
                                      positionsIn = "PositionsinMasterProteins"){
   modsperc <- map2_df(modificationTable$ModificationName,
                       modificationTable$Position,
@@ -445,6 +486,8 @@ proteinModificationTable <- function(db, modificationTable, peptideTable,
                                                    modificationLocation = .y,
                                                    modificationName = .x,
                                                    Accession = Accession,
+                                          multipleAccession = multipleAccession,
+                                                      showWarning = showWarning,
                                                    positionsIn = positionsIn))
   return(modsperc)
 }
@@ -472,4 +515,3 @@ str_locate_all_starts <- function(string, pattern){
 str_locate_all_ends <- function(string, pattern){
   return(str_locate_all(string = string, pattern = pattern)[[1]][,"end"])
 }
-
