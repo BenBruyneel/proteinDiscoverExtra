@@ -241,19 +241,19 @@ givePositions <- function(peptideTableRow, Accession,
   # end of Accession
   if (!is_empty(thisIsAccession)){
     # in case the accession exists more than one, possible with multiple database searches!
+    if (length(thisIsAccession)>1){
+      if (!is.na(multipleAccession)){
+        thisIsAccession <- thisIsAccession[multipleAccession]
+      } 
+      if (showWarning){
+        warning(" Multiple identical accessions in peptide table row!")
+      }
+    }
     endOfAccession <- whichStr[which(grepl(tempStr[whichStr], pattern = Accession))+1]-1
     if (!identical(endOfAccession, NA)){
       endOfAccession <- length(tempStr)
     }
     tempStr <- tempStr[thisIsAccession:endOfAccession]
-    if (length(tempStr)>1){
-      if (!is.na(multipleAccession)){
-        tempStr <- tempStr[multipleAccession]
-      }
-      if (showWarning){
-        warning(" Multiple identical accessions in peptide table row!")
-      }
-    }
     tempdf <- data.frame()
     for (counter in 1:length(tempStr)){
       newdf <- peptideTableRow
