@@ -243,8 +243,9 @@ givePositions <- function(peptideTableRow, Accession,
     # in case the accession exists more than one, possible with multiple database searches!
     if (length(thisIsAccession)>1){
       if (!is.na(multipleAccession)){
-        thisIsAccession <- thisIsAccession[multipleAccession]
-      } 
+        thisIsAccession <- 1       # thisIsAccession[multipleAccession] # remove
+        tempStr <- tempStr[multipleAccession]
+      }
       if (showWarning){
         warning(" Multiple identical accessions in peptide table row!")
       }
@@ -486,8 +487,8 @@ proteinModificationTable <- function(db, modificationTable, peptideTable,
                                                    modificationLocation = .y,
                                                    modificationName = .x,
                                                    Accession = Accession,
-                                          multipleAccession = multipleAccession,
-                                                      showWarning = showWarning,
+                                                   multipleAccession = multipleAccession,
+                                                   showWarning = showWarning,
                                                    positionsIn = positionsIn))
   return(modsperc)
 }
