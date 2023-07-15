@@ -21,14 +21,14 @@ shortToAccession <- function(short = "His4", proteinInfo = knockOutProteins()){
 #' helper function to retrieve the short annotation from a (uniprot) protein
 #'  code (eg P00815 for His4)
 #'  
-#' @param Accession protein Accession code
+#' @param accession protein Accession code
 #' @param proteinInfo data.frame containing protein info like the one coming
 #'  from the function \code{\link{knockoutProteins}}
 #'  
 #' @returns character vector
 #' @export
-accessionToShort <- function(Accession = "P00815", proteinInfo = knockOutProteins()){
-  return(proteinInfo$short[proteinInfo$Accession == Accession])
+accessionToShort <- function(accession = "P00815", proteinInfo = knockOutProteins()){
+  return(proteinInfo$short[proteinInfo$Accession == accession])
 }
 
 
@@ -51,7 +51,7 @@ aboveARSN <- function(db = NA, data = NA, cutOff = 10, removeNA = TRUE){
     return(NA)
   }
   if (identical(data, NA)){
-    data <- dbGetPsmTable(db = db, columnNames = "AverageReporterSN")
+    data <- dbGetPsmTable(db = db, columns = "AverageReporterSN")
   }
   if (removeNA){
     data <- data[!is.na(data)]
@@ -106,7 +106,7 @@ arsnPlot <- function(db, cutOff = 10,
                      returnData = FALSE,
                      dateTimeFormat = NA,
                      returnRaw = FALSE){
-  tpsms <- dbGetPsmTable(db =db, columnNames = c("RetentionTime", "AverageReporterSN"))
+  tpsms <- dbGetPsmTable(db =db, columns = c("RetentionTime", "AverageReporterSN"))
   thePlot <- plotPlusMatrix(
     sPlot = scatterPlot(tpsms,
                         pointAlpha = pointAlpha, pointColor = pointColor,
@@ -235,13 +235,13 @@ pPlot <- function(db,
     tData <- tData %>% dplyr::select(all_of(c(xColumn, yColumn)))
   } else {
     if (tableName == "psms"){
-      tData <- dbGetPsmTable(db = db, columnNames = c(xColumn, yColumn))
+      tData <- dbGetPsmTable(db = db, columns = c(xColumn, yColumn))
     } else {
       if (tableName == "peptides"){
-        tData <- dbGetPeptideTable(db = db, columnNames = c(xColumn, yColumn))
+        tData <- dbGetPeptideTable(db = db, columns = c(xColumn, yColumn))
       } else {
         if (tableName == "proteins"){
-          tData <- dbGetProteinTable(db = db, columnNames = c(xColumn, yColumn))
+          tData <- dbGetProteinTable(db = db, columns = c(xColumn, yColumn))
         } else {
           stop("Invalid table was specified")
         }

@@ -160,12 +160,12 @@ combinedModsToString <- function(theStrings, splitchars = "; ", patternchars = "
   }
 }
 
-#' function to figure out if a peptide (identified by PeptideGroupIDs) contains
+#' function to figure out if a peptide (identified by peptideGroupIDs) contains
 #'  a modification. Can be done with and without considering the position of 
 #'  the modification
 #'
 #' @param db database access 'handle'
-#' @param PeptideIDs the peptideID for which the data is to be retrieved.
+#' @param peptideIDs the peptideID for which the data is to be retrieved.
 #'  This should be a numeric or character vector format. The output from the
 #'  dbGetPeptideIDs function gives a data.frame so is only compatible when
 #'  using the column "TargetPeptideGroupsPeptideGroupID". Note: this function is
@@ -179,13 +179,13 @@ combinedModsToString <- function(theStrings, splitchars = "; ", patternchars = "
 #'
 #' @return logical vector (TRUE or FALSE)
 #' @export
-peptideContainsModification <- function(db, PeptideGroupIDs,
+peptideContainsModification <- function(db, peptideGroupIDs,
                                         modificationName,
                                         modificationPosition = NA){
   if (identical(modificationName,NA)){
     stop("Error : Modification Name cannot be NA")
   }
-  tempMods <- (dbGetPsmIDs(db = db, PeptideGroupIDs = PeptideGroupIDs) %>%
+  tempMods <- (dbGetPsmIDs(db = db, peptideGroupIDs = peptideGroupIDs) %>%
                  dbGetPsmTable(db = db) %>%
                  filter(!is.na(MasterProteinAccessions))
   )$Modifications
@@ -207,7 +207,7 @@ peptideContainsModification <- function(db, PeptideGroupIDs,
 #'  'PositionsinMasterProteins' field. This field may contain more than one
 #'   master protein and therefore the function needs an accession number to
 #'   specify from which one the positions need to be extracted
-#' @param Accession accession id (Uniprot style) of the (master) protein for
+#' @param accession accession id (Uniprot style) of the (master) protein for
 #'  which the positions need to be calculated
 #' @param multipleAccession integer vector, default = NA. In case of the same
 #'  accession occurring more than once, specifies which one to use. This can
@@ -225,7 +225,7 @@ peptideContainsModification <- function(db, PeptideGroupIDs,
 #' @return a data.frame row with the same data as the argument peptideTableRow
 #'  plus the start & end position of the peptide (present)
 #' @export
-givePositions <- function(peptideTableRow, Accession,
+givePositions <- function(peptideTableRow, accession,
                           multipleAccession = NA, showWarning = FALSE,
                           removeNA = FALSE,
                           positionsIn = "PositionsinMasterProteins"){
@@ -237,7 +237,7 @@ givePositions <- function(peptideTableRow, Accession,
   # find strings that have accessions 
   whichStr <- which(str_detect(tempStr, pattern = " \\[\\d+-\\d+\\]"))
   # find which string has the accession
-  thisIsAccession <- whichStr[which(grepl(tempStr[whichStr], pattern = Accession))]
+  thisIsAccession <- whichStr[which(grepl(tempStr[whichStr], pattern = accession))]
   # end of Accession
   if (!is_empty(thisIsAccession)){
     # in case the accession exists more than one, possible with multiple database searches!
@@ -250,7 +250,7 @@ givePositions <- function(peptideTableRow, Accession,
         warning(" Multiple identical accessions in peptide table row!")
       }
     }
-    endOfAccession <- whichStr[which(grepl(tempStr[whichStr], pattern = Accession))+1]-1
+    endOfAccession <- whichStr[which(grepl(tempStr[whichStr], pattern = accession))+1]-1
     if (!identical(endOfAccession, NA)){
       endOfAccession <- length(tempStr)
     }
@@ -292,7 +292,7 @@ givePositions <- function(peptideTableRow, Accession,
 #'  table, which is the Abbreviation and NOT the Name of the modification.
 #'  The information regarding Name/Abbreviation can be found in the
 #'  'FoundModifications' table in a pdResult file/database
-#' @param Accession accession id (Uniprot style) of the (master) protein
+#' @param accession accession id (Uniprot style) of the (master) protein
 #' @param multipleAccession integer vector, default = NA. In case of the same
 #'  accession occurring more than once, specifies which one to use. This can
 #'  happen when multiple databases with overlapping accessions are used
@@ -312,14 +312,14 @@ givePositions <- function(peptideTableRow, Accession,
 #' @return data.frame
 #' @export
 calculatePositionPercentage <- function(db, peptideTable, modificationLocation,
-                                        modificationName, Accession,
+                                        modificationName, accession,
                                         multipleAccession = NA, showWarning = FALSE,
                                         positionsIn = "PositionsinMasterProteins",
                                         giveTable = FALSE){
   tempdf <- data.frame()
   for (counter in 1:nrow(peptideTable)){
     newdf <- givePositions(peptideTableRow = peptideTable[counter,],
-                           Accession = Accession,
+                           accession = accession,
                            multipleAccession = multipleAccession,
                            showWarning = showWarning,
                            removeNA = TRUE,
@@ -338,7 +338,7 @@ calculatePositionPercentage <- function(db, peptideTable, modificationLocation,
     for (counter in 1:nrow(exa)){
       exa$modificationPresent[counter] <- 
         peptideContainsModification(db = db,
-                                    PeptideGroupIDs = exa$PeptideGroupID[counter],
+                                    peptideGroupIDs = exa$PeptideGroupID[counter],
                                     modificationName = modificationName,
                                     modificationPosition = exa$peptideLocation[counter])
     }
@@ -375,7 +375,7 @@ calculatePositionPercentage <- function(db, peptideTable, modificationLocation,
 #'  table, which is the Abbreviation and NOT the Name of the modification.
 #'  The information regarding Name/Abbreviation can be found in the
 #'  'FoundModifications' table in a pdResult file/database
-#' @param Accession accession id (Uniprot style) of the (master) protein
+#' @param accession accession id (Uniprot style) of the (master) protein
 #' @param multipleAccession integer vector, default = NA. In case of the same
 #'  accession occurring more than once, specifies which one to use. This can
 #'  happen when multiple databases with overlapping accessions are used
@@ -395,13 +395,13 @@ calculatePositionPercentage <- function(db, peptideTable, modificationLocation,
 #' @return data.frame
 #' @export
 getPositionTable <- function(db, peptideTable, modificationLocation,
-                             modificationName, Accession,
+                             modificationName, accession,
                              multipleAccession = NA, showWarning = FALSE,
                              positionsIn = "PositionsinMasterProteins"){
   tempdf <- data.frame()
   for (counter in 1:nrow(peptideTable)){
     newdf <- givePositions(peptideTableRow = peptideTable[counter,],
-                           Accession = Accession,
+                           accession = accession,
                            multipleAccession = multipleAccession,
                            showWarning = showWarning,
                            removeNA = TRUE,
@@ -419,7 +419,7 @@ getPositionTable <- function(db, peptideTable, modificationLocation,
   for (counter in 1:nrow(exa)){
     exa$modificationPresent[counter] <- 
       peptideContainsModification(db = db,
-                                  PeptideGroupIDs = exa$PeptideGroupID[counter],
+                                  peptideGroupIDs = exa$PeptideGroupID[counter],
                                   modificationName = modificationName,
                                   modificationPosition = exa$peptideLocation[counter])
   }
@@ -462,7 +462,7 @@ getPositionPercentage <- function(positionTable,
 #'  the same!)
 #' @param peptideTable peptide table coming from eg
 #'  \code{\link{dbGetPeptideTable}} 
-#' @param Accession accession id (Uniprot style) of the (master) protein for
+#' @param accession accession id (Uniprot style) of the (master) protein for
 #'  which the table is to be generated
 #' @param multipleAccession integer vector, default = NA. In case of the same
 #'  accession occurring more than once, specifies which one to use. This can
@@ -477,7 +477,7 @@ getPositionPercentage <- function(positionTable,
 #'  the percentage of each per position
 #' @export
 proteinModificationTable <- function(db, modificationTable, peptideTable,
-                                     Accession,
+                                     accession,
                                      multipleAccession = NA, showWarning = FALSE,
                                      positionsIn = "PositionsinMasterProteins"){
   modsperc <- map2_df(modificationTable$ModificationName,
@@ -486,7 +486,7 @@ proteinModificationTable <- function(db, modificationTable, peptideTable,
                                                    peptideTable = peptideTable,
                                                    modificationLocation = .y,
                                                    modificationName = .x,
-                                                   Accession = Accession,
+                                                   accession = accession,
                                                    multipleAccession = multipleAccession,
                                                    showWarning = showWarning,
                                                    positionsIn = positionsIn))
