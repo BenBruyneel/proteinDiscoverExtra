@@ -451,7 +451,7 @@ getPositionPercentage <- function(positionTable,
                                     sum(positionTable$Abundances_1,na.rm = TRUE)) * 100 ))
 }
 
-#' function that generates a complete 
+#' function that generates a complete protein modification table
 #'
 #' @param db database access 'handle'
 #' @param modificationTable data.frame coming from
@@ -472,6 +472,8 @@ getPositionPercentage <- function(positionTable,
 #' @param positionsIn specifies the column to get the positions from. This can
 #'  be different depending on Proteome Discoverer settings. Can also be
 #'  'PositionsinProteins'
+#' @param progress logical vector, default is FALSE, show progress bar in
+#'  R console or not
 #'
 #' @return data.frame of all modifications, their locations in the protein and
 #'  the percentage of each per position
@@ -479,7 +481,8 @@ getPositionPercentage <- function(positionTable,
 proteinModificationTable <- function(db, modificationTable, peptideTable,
                                      accession,
                                      multipleAccession = NA, showWarning = FALSE,
-                                     positionsIn = "PositionsinMasterProteins"){
+                                     positionsIn = "PositionsinMasterProteins",
+                                     progress = FALSE){
   modsperc <- map2_df(modificationTable$ModificationName,
                       modificationTable$Position,
                       ~calculatePositionPercentage(db = db,
@@ -489,7 +492,8 @@ proteinModificationTable <- function(db, modificationTable, peptideTable,
                                                    accession = accession,
                                                    multipleAccession = multipleAccession,
                                                    showWarning = showWarning,
-                                                   positionsIn = positionsIn))
+                                                   positionsIn = positionsIn),
+                      .progress = progress)
   return(modsperc)
 }
 
