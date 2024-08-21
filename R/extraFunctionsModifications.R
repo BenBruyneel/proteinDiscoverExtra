@@ -42,7 +42,7 @@ giveLast <- function(theString){
 #'  something like "K5(modification1); C65(modification2); N-Term(Prot)(Acetyl)" 
 #' @note it's very well possible that there are modification strings that this
 #'  function will have trouble with. It works good for everything the author has
-#'  encountered so far. Obviously it will be adjusted whne needed
+#'  encountered so far. Obviously it will be adjusted where needed
 #'
 #' @return a data.frame
 #' @export
@@ -243,18 +243,28 @@ givePositions <- function(peptideTableRow, accession,
     # in case the accession exists more than one, possible with multiple database searches!
     if (length(thisIsAccession)>1){
       if (!is.na(multipleAccession)){
-        thisIsAccession <- 1       # thisIsAccession[multipleAccession] # remove
-        tempStr <- tempStr[multipleAccession]
+        if ((multipleAccession) > length(thisIsAccession)){
+          if (showWarning){
+            warning("multipleAccession is bigger than number of available accessions!")
+          }
+        }
+        thisIsAccession <- thisIsAccession[multipleAccession]
+        tempStr <- tempStr[thisIsAccession]
+        thisIsAccession <- 1
+        # thisIsAccession <- 1       # thisIsAccession[multipleAccession] # remove
+        # tempStr <- tempStr[multipleAccession]
       }
       if (showWarning){
-        warning(" Multiple identical accessions in peptide table row!")
+        warning("Multiple identical accessions in peptide table row!")
       }
     }
-    endOfAccession <- whichStr[which(grepl(tempStr[whichStr], pattern = accession))+1]-1
-    if (!identical(endOfAccession, NA)){
-      endOfAccession <- length(tempStr)
-    }
-    tempStr <- tempStr[thisIsAccession:endOfAccession]
+    tempStr <- tempStr[thisIsAccession]
+    # endOfAccession <- whichStr[which(grepl(tempStr[whichStr], pattern = accession))+1]-1
+    # # if (!identical(endOfAccession, NA)){
+    # #   endOfAccession <- length(tempStr)
+    # # }
+    # browser()
+    # tempStr <- tempStr[thisIsAccession:endOfAccession]
     tempdf <- data.frame()
     for (counter in 1:length(tempStr)){
       newdf <- peptideTableRow
@@ -301,6 +311,8 @@ givePositions <- function(peptideTableRow, accession,
 #' @param positionsIn specifies the column to get the positions from. This can
 #'  be different depending on Proteome Discoverer settings. Can also be
 #'  'PositionsinProteins'
+#' @param abundancesColumn specifies which column in the peptide table contains
+#'  abundance information. Default is 'Abundances_1'
 #' @param giveTable if FALSE then the result will be a single row data.frame
 #'  with the modificationName (Abbreviation) of the modification, the location
 #'  in protein and the percentage of label (based on abundance of all peptides
@@ -315,6 +327,7 @@ calculatePositionPercentage <- function(db, peptideTable, modificationLocation,
                                         modificationName, accession,
                                         multipleAccession = NA, showWarning = FALSE,
                                         positionsIn = "PositionsinMasterProteins",
+                                        abundancesColumn = "Abundances_1",
                                         giveTable = FALSE){
   tempdf <- data.frame()
   for (counter in 1:nrow(peptideTable)){
@@ -330,7 +343,7 @@ calculatePositionPercentage <- function(db, peptideTable, modificationLocation,
   exa <- peptideTable %>%
     filter(startLocation <= modificationLocation &
              endLocation >= modificationLocation) %>%
-    select(Sequence, Modificationsallpossiblesites, Abundances_1,
+    select(Sequence, Modificationsallpossiblesites, !!sym(abundancesColumn),
            PeptideGroupID, startLocation, endLocation)
   if (nrow(exa)>0){
     exa$peptideLocation <- modificationLocation - exa$startLocation + 1
@@ -347,8 +360,8 @@ calculatePositionPercentage <- function(db, peptideTable, modificationLocation,
     } else {
       return(data.frame(modification = modificationName,
                         location = modificationLocation,
-                        percentage = (sum(exa$Abundances_1[exa$modificationPresent],na.rm = TRUE)/
-                                        sum(exa$Abundances_1,na.rm = TRUE)) * 100 ))
+                        percentage = (sum(exa[exa$modificationPresent, abundancesColumn],na.rm = TRUE)/
+                                        sum(exa[, abundancesColumn], na.rm = TRUE)) * 100 ))
     }
   } else {
     if (giveTable){
@@ -381,10 +394,11 @@ calculatePositionPercentage <- function(db, peptideTable, modificationLocation,
 #'  happen when multiple databases with overlapping accessions are used
 #' @param showWarning logical vector: give warning when multiple accession
 #'  occurs
-
 #' @param positionsIn specifies the column to get the positions from. This can
 #'  be different depending on Proteome Discoverer settings. Can also be
 #'  'PositionsinProteins'
+#' @param abundancesColumn specifies which column in the peptide table contains
+#'  abundance information. Default is 'Abundances_1'
 #'
 #' @note Essentially this function does the same as
 #'  \code{\link{calculatePositionPercentage}} but does not only calculate
@@ -397,7 +411,8 @@ calculatePositionPercentage <- function(db, peptideTable, modificationLocation,
 getPositionTable <- function(db, peptideTable, modificationLocation,
                              modificationName, accession,
                              multipleAccession = NA, showWarning = FALSE,
-                             positionsIn = "PositionsinMasterProteins"){
+                             positionsIn = "PositionsinMasterProteins",
+                             abundanceColumn = "Abundances_1"){
   tempdf <- data.frame()
   for (counter in 1:nrow(peptideTable)){
     newdf <- givePositions(peptideTableRow = peptideTable[counter,],
@@ -412,7 +427,7 @@ getPositionTable <- function(db, peptideTable, modificationLocation,
   exa <- peptideTable %>%
     filter(startLocation <= modificationLocation &
              endLocation >= modificationLocation) %>%
-    select(Sequence, Modificationsallpossiblesites, Abundances_1,
+    select(Sequence, Modificationsallpossiblesites, !!sym(abundanceColumn),
            PeptideGroupID, startLocation, endLocation)
   exa$peptideLocation <- modificationLocation - exa$startLocation + 1
   exa$modificationPresent <- FALSE
@@ -439,16 +454,19 @@ getPositionTable <- function(db, peptideTable, modificationLocation,
 #'  to get or calculate data
 #' @param modificationName name of the modification. This argument is in this
 #'  function only used in the resulting data.frame
-#'
+#' @param abundancesColumn specifies which column in the peptide table contains
+#'  abundance information. Default is 'Abundances_1'
+#'  
 #' @return data.frame (modification, location, percentage)
 #' @export
 getPositionPercentage <- function(positionTable,
-                                  modificationLocation, modificationName){
+                                  modificationLocation, modificationName,
+                                  abundancesColumn = "Abundances_1"){
   return(data.frame(modification = modificationName,
                     location = modificationLocation,
-                    percentage = (sum(positionTable$Abundances_1[positionTable$modificationPresent],
+                    percentage = (sum(positionTable[positionTable$modificationPresent, abundancesColumn],
                                       na.rm = TRUE) /
-                                    sum(positionTable$Abundances_1,na.rm = TRUE)) * 100 ))
+                                    sum(positionTable[, abundancesColumn], na.rm = TRUE)) * 100 ))
 }
 
 #' function that generates a complete protein modification table

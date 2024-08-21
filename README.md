@@ -4,8 +4,8 @@ Examples functions that use the [proteinDiscover](https://github.com/BenBruyneel
 
 For examples, see: [proteinDiscoverExtra](https://benbruyneel.github.io/proteinDiscover/extra/)
 
-Update: adjustments to code due to changes in [proteinDiscover](https://github.com/BenBruyneel/proteinDiscover/). The examples 'manual' has also been updated to incorporate the changes. Also changes in [dplyr](https://dplyr.tidyverse.org/) caused some example code to not run anymore.
+Update: calculations concerning modifications has been revisited. There were a few cases where problems occurred. All these cases involved multiple accessions in the column specified by the 'positionsIn' argument. This was recently discovered to give erroneous percentages.
 
 Work in Progress!
 
-July, 15th 2023
+August, 21st 2024
